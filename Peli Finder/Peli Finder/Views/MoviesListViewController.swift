@@ -10,8 +10,8 @@ import UIKit
 
 class MoviesListViewController: UITableViewController {
     
-    let countries = ["Argentina", "Brasil", "Francia", "España", "Estados Unidos", "Honduras", "Japón", "México", "Portugal"]
-    private var filteredCountries = [String]()
+    private var movies = [MovieViewModel]()
+    private var movieResult = [MovieViewModel]()
     private var isSearching = false
     
     private let searchController = UISearchController(searchResultsController: nil)
@@ -20,6 +20,18 @@ class MoviesListViewController: UITableViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         setupViews()
+        RequestManager.shared.makeRequest(requestType: .feed) { (result) in
+            switch result {
+            case .success(let movies):
+                self.movies = movies.map({ MovieViewModel(movie: $0) })
+                DispatchQueue.main.async {
+                    self.tableView.reloadData()
+                }
+                break
+            case .failure(_):
+                break
+            }
+        }
     }
 
     
@@ -27,7 +39,6 @@ class MoviesListViewController: UITableViewController {
         setupNavBar()
         tableView.tableFooterView = UIView(frame: .zero)
         tableView.register(MovieCell.self, forCellReuseIdentifier: MovieCell.identifier)
-//        searchBar.placeholder = "searchBarPlaceholder".localized
 //        addEmptyLabel()
     }
     
@@ -37,6 +48,8 @@ class MoviesListViewController: UITableViewController {
         navigationItem.searchController = searchController
         searchController.searchBar.delegate = self
         searchController.obscuresBackgroundDuringPresentation = false
+        searchController.searchBar.placeholder = "searchBarPlaceholder".localized
+        
     }
     
     private func addEmptyLabel() {
@@ -66,14 +79,14 @@ class MoviesListViewController: UITableViewController {
 extension MoviesListViewController {
     override func numberOfSections(in tableView: UITableView) -> Int { 1 }
     
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { isSearching ? filteredCountries.count : countries.count }
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { isSearching ? movieResult.count : movies.count }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: MovieCell.identifier, for: indexPath)
         if isSearching {
-            cell.textLabel?.text = filteredCountries[indexPath.row]
+//            cell.textLabel?.text = filteredCountries[indexPath.row]
         } else {
-            cell.textLabel?.text = countries[indexPath.row]
+            cell.textLabel?.text = movies[indexPath.row].title
         }
         
         return cell
@@ -110,7 +123,7 @@ extension MoviesListViewController: UISearchBarDelegate {
     }
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        filteredCountries = countries.filter({ $0.lowercased().hasPrefix(searchText.lowercased()) })
+//        filteredCountries = countries.filter({ $0.lowercased().hasPrefix(searchText.lowercased()) })
         tableView.reloadData()
     }
     
