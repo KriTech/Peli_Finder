@@ -6,7 +6,7 @@
 //  Copyright © 2020 Jose Enrique Montañez Villanueva. All rights reserved.
 //
 
-import Foundation
+import UIKit
 
 typealias MovieRequestHandler = (Result<[Movie], Error>) -> Void
 
@@ -24,23 +24,31 @@ class RequestManager {
         
         var urlString = endPointURL+requestType.rawValue
         if let query = query {
-            urlString += "&query" + query
+            urlString += "&query=" + query
         }
         
-        guard let url = URL(string: urlString) else { return }
+        guard let url = URL(string: urlString) else {
+            completion(.failure(RequestError.badURL))
+            return
+        }
         
-        var urlRequest = URLRequest(url: url, cachePolicy: .useProtocolCachePolicy)
+        var urlRequest = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad)
         urlRequest.httpMethod = "GET"
         urlRequest.addValue(token, forHTTPHeaderField: "Authorization")
         
         let dataTask = URLSession.shared.dataTask(with: urlRequest) { (data, response, error) in
+            self.currentSearchTask = nil
             guard let data = data else {
                 completion(.failure(RequestError.connectionError))
                 return
             }
 
             do {
-                let moviesContainer = try JSONDecoder().decode(MoviesContainer.self, from: data)
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = "yyyy-MM-dd"
+                let decoder = JSONDecoder()
+                decoder.dateDecodingStrategy = .formatted(dateFormatter)
+                let moviesContainer = try decoder.decode(MoviesContainer.self, from: data)
                 completion(.success(moviesContainer.movies))
                 return
             } catch {
@@ -62,6 +70,25 @@ class RequestManager {
         dataTask.resume()
     }
     
+    
+    func setOrDownloadImage(imageName: String?, in imageView: UIImageView) {
+        guard let imageName = imageName else { return }
+        let urlString = imagesEndPointURL + RequestType.thumbnailImage.rawValue + imageName
+        
+        guard let url = URL(string: urlString) else { return }
+        
+        var urlRequest = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad)
+        urlRequest.httpMethod = "GET"
+        urlRequest.addValue(token, forHTTPHeaderField: "Authorization")
+        
+        URLSession.shared.dataTask(with: urlRequest) { [weak imageView] (data, _, _) in
+            if let data = data, let image = UIImage(data: data) {
+                DispatchQueue.main.async {
+                    imageView?.image = image
+                }
+            }
+        }.resume()
+    }
 }
 
 extension RequestManager {
@@ -75,5 +102,6 @@ extension RequestManager {
     enum RequestError: Error {
         case connectionError
         case JSONParsing
+        case badURL
     }
 }

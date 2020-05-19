@@ -17,6 +17,7 @@ struct MovieViewModel {
     let backdropImage: String?
     let posterImage: String?
     let adultContent: String
+    let releaseDate: String
     
     init(movie: Movie) {
         self.id = movie.id
@@ -25,5 +26,15 @@ struct MovieViewModel {
         self.backdropImage = movie.backdropImage
         self.posterImage = movie.posterImage
         self.adultContent = movie.adultOnly ?? false ? "+18" : ""
+        if let releaseDate = movie.releaseDate {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "dd-MM-YYYY"
+            self.releaseDate = """
+            \("releaseDate".localized):
+            \(dateFormatter.string(from: releaseDate))
+            """
+        } else {
+            self.releaseDate = ""
+        }
     }
 }

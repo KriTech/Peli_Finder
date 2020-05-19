@@ -25,6 +25,7 @@ struct Movie: Codable {
         case backdropImage = "backdrop_path"
         case posterImage = "poster_path"
         case adultOnly = "adult"
+        case releaseDate = "release_date"
     }
     
     let id: Int
@@ -33,4 +34,5 @@ struct Movie: Codable {
     let adultOnly: Bool?
     let backdropImage: String?
     let posterImage: String?
+    let releaseDate: Date?
 }
