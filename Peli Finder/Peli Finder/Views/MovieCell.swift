@@ -15,6 +15,7 @@ class MovieCell: UITableViewCell {
     private lazy var posterImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.contentMode = .scaleAspectFit
         
         self.addSubview(imageView)
         imageView.heightAnchor.constraint(equalToConstant: 100).isActive = true
@@ -30,6 +31,7 @@ class MovieCell: UITableViewCell {
         label.translatesAutoresizingMaskIntoConstraints = false
         label.font = UIFont.boldSystemFont(ofSize: 20)
         label.numberOfLines = 2
+        label.adjustsFontForContentSizeCategory = true
         
         self.addSubview(label)
         label.topAnchor.constraint(equalTo: self.topAnchor, constant: 10).isActive = true
@@ -44,6 +46,7 @@ class MovieCell: UITableViewCell {
         label.translatesAutoresizingMaskIntoConstraints = false
         label.font = UIFont.preferredFont(forTextStyle: .footnote)
         label.numberOfLines = 2
+        label.adjustsFontForContentSizeCategory = true
         
         self.addSubview(label)
         label.topAnchor.constraint(equalTo: self.titleLabel.bottomAnchor, constant: 5).isActive = true
@@ -66,26 +69,19 @@ class MovieCell: UITableViewCell {
         
     var movieViewModel: MovieViewModel? {
         didSet {
-            RequestManager.shared.setOrDownloadImage(imageName: movieViewModel?.posterImage, in: self.posterImageView)
+            RequestManager.shared.setOrDownloadImage(imageName: movieViewModel?.posterImage, with: .thumbnailImage, in: self.posterImageView)
             self.titleLabel.text = movieViewModel?.title
             self.releaseDateLabel.text = movieViewModel?.releaseDate
             self.adultContentLabel.text = movieViewModel?.adultContent
+            self.clipsToBounds = true
         }
     }
 
-    
-    
     override func prepareForReuse() {
         self.posterImageView.image = nil
         self.titleLabel.text = nil
         self.adultContentLabel.text = nil
         self.releaseDateLabel.text = nil
-    }
-
-    override func setSelected(_ selected: Bool, animated: Bool) {
-        super.setSelected(selected, animated: animated)
-
-        // Configure the view for the selected state
     }
 
 }

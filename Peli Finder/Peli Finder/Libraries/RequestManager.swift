@@ -11,14 +11,16 @@ import UIKit
 typealias MovieRequestHandler = (Result<[Movie], Error>) -> Void
 
 class RequestManager {
+    
     private let endPointURL = "https://api.themoviedb.org/3"
     private let imagesEndPointURL = "https://image.tmdb.org/t/p"
     private let token = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIwOWJmZTQwZGJmM2JkMjMzOGRmMjE1ZTU3MTNlZWI1MSIsInN1YiI6IjVlYmVkY2UzYmM4YWJjMDAyMWMzYTZmYyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.rv7oBfH6ZH6Zl6fYUdMi1trZdRZZlt0OhktKZvnFucI"
     private var currentSearchTask: URLSessionDataTask?
+    private let imagesCache = NSCache<NSString, UIImage>()
+    
     static let shared = RequestManager()
     
     private init() {}
-    
     
     func makeRequest(requestType: RequestType, query: String? = nil, completion: @escaping  MovieRequestHandler) {
         
@@ -32,7 +34,7 @@ class RequestManager {
             return
         }
         
-        var urlRequest = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad)
+        var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "GET"
         urlRequest.addValue(token, forHTTPHeaderField: "Authorization")
         
@@ -71,13 +73,18 @@ class RequestManager {
     }
     
     
-    func setOrDownloadImage(imageName: String?, in imageView: UIImageView) {
+    func setOrDownloadImage(imageName: String?, with resolution: RequestType, in imageView: UIImageView) {
         guard let imageName = imageName else { return }
-        let urlString = imagesEndPointURL + RequestType.thumbnailImage.rawValue + imageName
+        let urlString = imagesEndPointURL + resolution.rawValue + imageName
         
         guard let url = URL(string: urlString) else { return }
         
-        var urlRequest = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad)
+        if let image = imagesCache.object(forKey: urlString as NSString) {
+            imageView.image = image
+            return
+        }
+
+        var urlRequest = URLRequest(url: url, cachePolicy: .reloadIgnoringCacheData)
         urlRequest.httpMethod = "GET"
         urlRequest.addValue(token, forHTTPHeaderField: "Authorization")
         
@@ -85,6 +92,7 @@ class RequestManager {
             if let data = data, let image = UIImage(data: data) {
                 DispatchQueue.main.async {
                     imageView?.image = image
+                    self.imagesCache.setObject(image, forKey: urlString as NSString)
                 }
             }
         }.resume()
